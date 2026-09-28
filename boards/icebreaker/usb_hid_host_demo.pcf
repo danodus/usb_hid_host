@@ -10,7 +10,7 @@ set_io -nowarn UART_TXD          9
 
 
 # usb_host_dual_socket_pmod on PMOD1B
-set_io usbdp 31
-set_io usbdm 28
+set_io usbdp 27
+set_io usbdm 26
 
 
