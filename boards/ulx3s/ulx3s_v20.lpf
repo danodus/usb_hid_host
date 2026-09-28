@@ -62,10 +62,10 @@ LOCATE COMP "usb_fpga_bd_dp" SITE "D15"; # single ended i/o or differential i/o
 LOCATE COMP "usb_fpga_bd_dn" SITE "E15";
 IOBUF  PORT "usb_fpga_bd_dp" PULLMODE=NONE IO_TYPE=LVCMOS33 DRIVE=4;
 IOBUF  PORT "usb_fpga_bd_dn" PULLMODE=NONE IO_TYPE=LVCMOS33 DRIVE=4;
-# LOCATE COMP "usb_fpga_pu_dp" SITE "B12"; # pull up/down control
-# LOCATE COMP "usb_fpga_pu_dn" SITE "C12";
-# IOBUF  PORT "usb_fpga_pu_dp" PULLMODE=NONE IO_TYPE=LVCMOS33 DRIVE=4;
-# IOBUF  PORT "usb_fpga_pu_dn" PULLMODE=NONE IO_TYPE=LVCMOS33 DRIVE=4;
+LOCATE COMP "usb_fpga_pu_dp" SITE "B12"; # pull up/down control
+LOCATE COMP "usb_fpga_pu_dn" SITE "C12";
+IOBUF  PORT "usb_fpga_pu_dp" PULLMODE=NONE IO_TYPE=LVCMOS33 DRIVE=4;
+IOBUF  PORT "usb_fpga_pu_dn" PULLMODE=NONE IO_TYPE=LVCMOS33 DRIVE=4;
 
 ## SHUTDOWN "power", "ram" sheet (connected from PCB v1.7.5)
 # on PCB v1.7 shutdown is not connected to FPGA

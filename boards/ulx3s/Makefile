@@ -20,7 +20,7 @@ $(TARGET).bit: $(TARGET)_out.config
 ${TARGET}.svf: ${TARGET}.bit
 
 prog: ${TARGET}.svf
-	icesprog $(TARGET).bit
+	fujprog $(TARGET).bit
 
 clean:
 	rm -f *.svf *.bit *.config *.json

@@ -12,9 +12,14 @@ module top (
     // LEDs
     output [7:0] led,
 
-    // US2 USB port
+    // US2 USB port. The bidirectional pair is the one the core drives.
+    // usb_fpga_dp/dn are bonded to the same D+/D- nets; they must be
+    // inputs with pull-ups off or the default weak pull-ups fight the
+    // host 15k pulldowns.
     inout	 usb_fpga_bd_dn,
-    inout	 usb_fpga_bd_dp
+    inout	 usb_fpga_bd_dp,
+    output   usb_fpga_pu_dp,
+    output   usb_fpga_pu_dn
 );
 
 wire sys_resetn;
@@ -28,6 +33,10 @@ wire usb_report, usb_conerr, game_l, game_r, game_u, game_d, game_a, game_b, gam
 wire game_sel, game_sta;
 wire [13:0] dbg_pc;
 wire [3:0] dbg_inst;
+
+// Drive both pull pins low: 15k host pulldowns on, 1.1k device pull-ups off.
+assign usb_fpga_pu_dp = 1'b0;
+assign usb_fpga_pu_dn = 1'b0;
 
 clock clock(
     .clkin(clk_25mhz),
