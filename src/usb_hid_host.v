@@ -45,8 +45,10 @@ wire [3:0] save_r;      // which register to save to
 wire [3:0] save_b;      // dat[b]
 wire connected;
 
+reg rec_rst = 0;
+wire ukp_rstn = usbrst_n & ~rec_rst;
 ukp ukp(
-    .usbrst_n(usbrst_n), .usbclk(usbclk),
+    .usbrst_n(ukp_rstn), .usbclk(usbclk),
     .usb_dp(usb_dp), .usb_dm(usb_dm), .usb_oe(),
     .ukprdy(data_rdy), .ukpstb(data_strobe), .ukpdat(ukpdat), .save(save), .save_r(save_r), .save_b(save_b),
     .connected(connected), .conerr(conerr));
@@ -223,8 +225,25 @@ always @(posedge usbclk) begin : response_recognition
     if (~connected) begin
         typ <= 2'd0;
         if (connected_r) dev_typ <= 2'd0;
-    end else
+    end     else
         typ <= dev_typ;
+end
+
+// Finished enumeration without recognizing a HID device. The poll loop
+// would otherwise run forever with the LED off. Hold SE0, then try again.
+reg [17:0] rec_cnt = 0;
+always @(posedge usbclk) begin
+    if (!usbrst_n) begin
+        rec_rst <= 0;
+        rec_cnt <= 0;
+    end else if (rec_rst) begin
+        if (rec_cnt == 18'd239999) begin
+            rec_rst <= 0;
+            rec_cnt <= 0;
+        end else
+            rec_cnt <= rec_cnt + 1;
+    end else if (connected && dev_typ == 2'd0)
+        rec_rst <= 1;
 end
 
 endmodule

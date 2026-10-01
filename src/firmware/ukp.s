@@ -7,8 +7,21 @@ cstart:
 cstart2:
 	wait
 	bc	connected
-	bz	cstart
+	bz	discwait
+	jmp	attached
 
+; D- low means "no pull-up". Looping here forever never resets the bus,
+; so a pad that dropped off after PWR stays dark until the next press.
+discwait:
+	ldi	100
+disc2:
+	wait
+	bz	still_low
+	jmp	attached
+still_low:
+	djnz	disc2
+	jmp	reset
+attached:
 ; ---- wait 200mS after device attached
 	ldi	200
 w200ms:
