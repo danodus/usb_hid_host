@@ -13,6 +13,8 @@ cstart2:
 	ldi	200
 w200ms:
 	wait
+	out4	0x03		; keep-alive, or the device suspends during this wait
+	hiz
 	djnz	w200ms
 
 ;
@@ -110,7 +112,8 @@ sendinlp:
 	jmp  sendack
 	hiz
 
-; ---- wait 1mS
+; ---- wait 2mS (SET_ADDRESS recovery)
+	wait
 	wait
 
 ; ---- send set configuration 1
@@ -132,6 +135,21 @@ in10lp:
 ; ---- send ACK
 	jmp sendack
 	hiz
+
+; SET_IDLE (duration 0). Many pads NAK interrupt IN until this is sent.
+; STALL falls through (nak cleared in the receiver). A long NAK run while
+; still enumerating restarts from cstart instead of sitting here forever.
+	jmp setidle
+	hiz
+	jmp rcvdt
+setidle_in:
+	jmp in10
+	hiz
+	jmp rcvdt
+	bnak setidle_in
+	jmp sendack
+	hiz
+
 	toggle
 	jmp  cstart
 
@@ -173,13 +191,13 @@ connerr:
 ; ---- USB bus reset
 reset:
 	out0
-	ldi	10
+	ldi	50			; 50ms SE0. A "10" here is often only ~9ms, which a pad can miss
 busrstlp:
 	wait
 	djnz	busrstlp
 	hiz
-	; ---- 40mS wait
-	ldi	40
+	; ---- 100mS wait. Some gamepads miss a shorter recovery and then NAK forever.
+	ldi	100
 w40ms:
 	wait
 	out4 0x03		; keep-alive
@@ -319,5 +337,27 @@ sendack:
 	outb 0x80
 	outb 0xd2
 	out4 0x03
+	ret
+
+setidle:			; HID SET_IDLE, duration 32ms, report 0, interface 0, addr 1
+	outb 0x80		; SYNC
+	outb 0x2d		; PID SETUP
+	outb 0x01		; ADDR:ENDP = 1:0
+	outb 0xe8		; CRC5
+	out4 0x03		; EOP
+
+	outb 0x80		; SYNC
+	outb 0xc3		; PID=DATA0
+	outb 0x21		; bmRequestType: class, interface, host-to-device
+	outb 0x0a		; bRequest = SET_IDLE
+	outb 0x00		; wValue low: report ID 0
+	outb 0x08		; wValue high: duration 32ms, so an idle report is sent
+	outb 0x00		; wIndex: interface 0
+	outb 0x00
+	outb 0x00		; wLength = 0
+	outb 0x00
+	outb 0x37		; CRC16
+	outb 0xe1
+	out4 0x03		; EOP
 	ret
 prgend:
