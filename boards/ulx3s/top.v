@@ -6,6 +6,10 @@
 module top (
     input	 clk_25mhz,
 
+    // PWR button (BTN_PWRn). Active low; a short press resets the design.
+    // Holding it for about a second still powers the board off.
+    input	 btn_pwr_n,
+
     // UART output over US1 USB port
     output	 ftdi_rxd,
 
@@ -22,7 +26,7 @@ module top (
     output   usb_fpga_pu_dn
 );
 
-wire sys_resetn;
+wire pll_locked;
 wire clk_usb;
 wire [1:0] usb_type;
 wire [7:0] key_modifiers, key1, key2, key3, key4;
@@ -42,8 +46,29 @@ clock clock(
     .clkin(clk_25mhz),
     .clk12(clk_usb),       // 12Mhz usb clock
     .clk100(),
-    .locked(sys_resetn)
+    .locked(pll_locked)
 );
+
+// Assert reset as soon as PWR is pressed. Release it 10 ms after the
+// button has been stable high, so contact bounce does not restart USB.
+reg [1:0] pwr_sync = 2'b11;
+reg [16:0] pwr_cnt = 0;
+reg pwr_released = 0;
+
+always @(posedge clk_usb) begin
+    pwr_sync <= {pwr_sync[0], btn_pwr_n};
+    if (!pwr_sync[1]) begin
+        pwr_cnt <= 0;
+        pwr_released <= 0;
+    end else if (!pwr_released) begin
+        if (pwr_cnt == 17'd119999)
+            pwr_released <= 1;
+        else
+            pwr_cnt <= pwr_cnt + 1'b1;
+    end
+end
+
+wire sys_resetn = pll_locked & pwr_released;
 
 usb_hid_host usb (
     .usbclk(clk_usb), .usbrst_n(sys_resetn),
@@ -70,13 +95,16 @@ hid_printer prt (
 reg report_toggle;      // blinks whenever there's a report
 always @(posedge clk_usb) if (usb_report) report_toggle <= ~report_toggle;
 
-   assign led[0] = report_toggle;
-   assign led[1] = usb_type;
-   assign led[2] = |usb_report;
-   assign led[3] = mouse_btn;
-   assign led[4] = |mouse_dx;
-   assign led[5] = |mouse_dy;
-   assign led[6] = |key_modifiers;
-   assign led[7] = |key1;
+//    assign led[0] = report_toggle;
+//    assign led[1] = usb_type;
+//    assign led[2] = |usb_report;
+//    assign led[3] = mouse_btn;
+//    assign led[4] = |mouse_dx;
+//    assign led[5] = |mouse_dy;
+//    assign led[6] = |key_modifiers;
+//    assign led[7] = |key1;
+
+assign led[0] = (usb_type == 2'b11);
+assign led[4:1] = {game_l, game_r, game_u, game_d};
 
 endmodule
